@@ -1,0 +1,270 @@
+﻿@model PokemonDB_MVC.Models.PokemonTbl
+
+@{
+    ViewBag.Title = Model.PokemonName;
+    string format = "000";
+    string paramaterValue = Model.PokedexNo.ToString(format);
+
+}
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.0.0-rc.1/chartjs-plugin-datalabels.min.js" integrity="sha512-+UYTD5L/bU1sgAfWA0ELK5RlQ811q8wZIocqI7+K0Lhh8yVdIoAMEs96wJAIbgFvzynPm36ZCXtkydxu1cs27w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<img class="pokeball" src="~/Images/pokeball.svg" />
+
+<section class="main-section">
+
+    <div class="details-container">
+        <div class="name-container">
+            <h1 id="pkm-number">#@paramaterValue</h1>
+            <h2 id="pkm-name">@Html.DisplayFor(model => model.PokemonName)</h2>
+            <h3 id="pkm-category">@ViewBag.apiData.Category Pokémon</h3>
+            @if (Model.Image2 != null)
+            {
+                var imgAs64 = Convert.ToBase64String(Model.Image2);
+                var imgAsPng = string.Format("data:image/gif; base64, {0}", imgAs64);
+                <img src="@imgAsPng" id="pkm-img-source" />
+            }
+        </div>
+
+        <div class="info-container">
+            <h3>Type</h3>
+
+            <div class="pkm-type">
+                <img id="pkm-type-icon" />
+                <div id="pkm-type-div">@Html.DisplayFor(model => model.Type1)</div>
+            </div>
+            <div class="pkm-type">
+                <img id="pkm-type-icon2" />
+                <div id="pkm-type-div2">@Html.DisplayFor(model => model.Type2)</div>
+            </div>
+
+            <br /><br /><br />
+
+            <div class="pkm-measurements">
+                <div class="pkm-height">
+                    <h3>Height</h3>
+                    <span>@ViewBag.apiData.HeightMetres</span>m
+                </div>
+                <div class="pkm-weight">
+                    <h3>Weight</h3>
+                    <span>@ViewBag.apiData.WeightKG</span>kg
+                </div>
+            </div>
+
+            <br /><br />
+
+            <h3>About</h3>
+            <p class="pkm-about">
+                @ViewBag.apiData.Description
+            </p>
+            <p class="back-to-pokedex">
+                @Html.ActionLink("Back to Pokédex", "Index", new object { }, new { @class = "trainer-action-controls" })
+            </p>
+        </div>
+
+
+        <div class="pkm-stats-container">
+            <h3>Base stats</h3>
+            <canvas id="statsChart"></canvas>
+            <div class="total-stats">
+                <h3>
+                    Total
+                </h3>
+                <h4 class="total-stats">
+                    @ViewBag.apiData.Total
+                </h4>
+            </div>
+        </div>
+    </div>
+    <br />
+</section>
+
+
+<script>
+
+    //only make one div if Pokemon only has one type
+    $('.pkm-type').each(function () {
+        if (!$(this).text().trim().length) {
+            $(this).css('display', 'none');
+        }
+    });
+</script>
+
+
+<script>
+    //Change background color of the Pokemon type divs based on their types
+    $(document).ready(function () {
+        let types = ['Normal', 'Fighting', 'Flying', 'Poison', 'Ground', 'Rock', 'Bug', 'Ghost', 'Steel',
+            'Fire', 'Water', 'Grass', 'Electric', 'Psychic', 'Ice', 'Dragon', 'Dark', 'Fairy'];
+
+        let colors = ['#9099a1', '#ce4069', '#92aade', '#ab6ac8', '#d97746', '#c7b78b', '#90c12c', '#5269ac', '#5a8ea1',
+            '#ff9c54', '#4d90d5', '#63bb5b', '#f3d23b', '#f97176', '#74cec0', '#096dc4', '#5a5366', '#ec8fe6'];
+
+        for (let i = 0; i < types.length; i++) {
+            $(".pkm-type:contains('" + types[i] + "')").css('background-color', colors[i]);
+        }
+    });
+</script>
+
+
+
+<script>
+    //Generate type icon URLs based on pattern
+    function getTypeIconURL(type) {
+        return '/Images/Type Icons/' + type.toLowerCase() + '.png';
+    }
+
+    //Get  elements
+    var typeDiv = document.getElementById('pkm-type-div');
+    var typeDiv2 = document.getElementById('pkm-type-div2');
+    var typeSrc = document.getElementById('pkm-type-icon');
+    var typeSrc2 = document.getElementById('pkm-type-icon2');
+
+    //Set type icons for typeDiv
+    var typeDivText = typeDiv.textContent.trim();
+    if (typeDivText) {
+        typeSrc.src = getTypeIconURL(typeDivText);
+    }
+
+    //Set type icons for typeDiv2
+    var typeDiv2Text = typeDiv2.textContent.trim();
+    if (typeDiv2Text) {
+        typeSrc2.src = getTypeIconURL(typeDiv2Text);
+    }
+</script>
+
+
+
+
+<script>
+
+    //bar charts for Pokémon statistics
+    const labels = ["HP", "Attack", "Defense", "SpAtk", "SpDef", "Speed"];
+
+    const data = {
+        labels: labels,
+        datasets: [{
+            axis: 'y',
+
+            data: [@ViewBag.apiData.HP, @ViewBag.apiData.Attack, @ViewBag.apiData.Defense, @ViewBag.apiData.SpAtk, @ViewBag.apiData.SpDef, @ViewBag.apiData.Speed],
+            fill: false,
+            backgroundColor: ["rgba(255, 89, 89, 255)", "rgba(245, 172, 120, 255)", "rgba(250, 224, 120, 255)", "rgba(157, 183, 245, 255)", "rgba(167,219,141,255)", "rgba(250, 146, 178, 255)"],
+        }]
+    };
+
+    const config = {
+
+        type: 'bar',
+        data,
+        plugins: [ChartDataLabels],
+        options: {
+            hover: () => { },
+            legend: {
+                display: false
+            },
+            plugins: {
+                tooltip: {
+                    enabled: false
+                },
+                legend: {
+                    display: false
+                },
+                datalabels: {
+                    color: 'white'
+                }
+            },
+            indexAxis: 'y',
+            scales: {
+                x: {
+                    grid: {
+                        display: false,
+
+                    },
+                    ticks: {
+                        display: false
+                    },
+                    beginAtZero: true,
+                    display: false
+                },
+                y: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#000'
+                    },
+                }
+            }
+        },
+    };
+</script>
+
+
+<script>
+    //calling barchart script
+    Chart.defaults.font.size = 16;
+    Chart.defaults.font.family = "Poppins";
+    Chart.defaults.font.color = "black";
+    const statsChart = new Chart(
+        document.getElementById('statsChart'),
+        config
+    );
+</script>
+
+<script src="node_modules/colorthief/dist/color-thief.umd.js"></script>
+
+
+<script>
+    //change the sidebar and sidebar icons depending on the colour of the Pokémon image
+    const testDiv = document.querySelector(".sidebar");
+    const searchIcon = document.querySelector(".bx-search");
+
+    const testImg = document.getElementById("pkm-img-source");
+
+    const colorThief = new ColorThief();
+
+    // Make sure image is finished loading
+    if (testImg.complete) {
+        testDiv.setAttribute("style", `background: rgb(${colorThief.getColor(testImg)})`);
+
+    } else {
+        testImg.addEventListener('load', function () {
+            testDiv.setAttribute("style", `background: rgb(${colorThief.getColor(testImg)})`);
+        });
+    }
+
+
+    if (testImg.complete) {
+        searchIcon.setAttribute("style", `background: rgb(${colorThief.getColor(testImg)})`);
+
+    } else {
+        testImg.addEventListener('load', function () {
+            searchIcon.setAttribute("style", `background: rgb(${colorThief.getColor(testImg)})`);
+        });
+    }
+
+
+    if (testImg.complete) {
+        for (let elem of hover) {
+            {
+                elem.style.color = "white"
+            }
+        };
+
+    } else {
+        for (let elem of hover) {
+
+            {
+                elem.style.background = `rgb(${colorThief.getColor(testImg)})`
+            }
+        };
+    }
+
+    //changing back to list link as shortcut
+    let goBack = document.querySelectorAll('.trainer-action-controls');
+    goBack.setAttribute("style", 'background: black');
+
+</script>
